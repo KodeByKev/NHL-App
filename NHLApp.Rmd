@@ -1,0 +1,110 @@
+---
+title: "NHLApp"
+author: "Kevin Donohue"
+date: "2024-01-17"
+output: html_document
+---
+
+
+```{r}
+library(shiny)
+library(dplyr)
+library(ggplot2)
+
+skaterdata <- read.csv("skaterdata.csv")
+
+ui <- fluidPage(
+  titlePanel("NHL Skater Statistics"),
+  sidebarLayout(
+    sidebarPanel(
+      selectInput("team_selector", "Select Team:",
+                  choices = setdiff(unique(skaterdata$Tm), c("TOT", "F", "D")),
+                  selected = unique(skaterdata$Tm)[1]),
+      selectInput("year_selector", "Select Year:",
+                  choices = unique(skaterdata$Yr),
+                  selected = unique(skaterdata$Yr)[1]),
+      selectInput("variable_selector", "Select Variable for Y-axis:",
+                  choices = c("G", "A", "PTS", "FOW", "HIT", "GP", "PIM", "SH", "S"),
+                  selected = "G")
+    ),
+    mainPanel(
+      tabsetPanel(
+        type = "tabs",
+        tabPanel("Plot", plotOutput("bar_chart")),
+        tabPanel(
+          "Documentation",
+          fluidRow(
+            column(
+              width = 12,
+              tags$p(
+                "The variables included in your app are as follows:",
+                tags$ul(
+                  tags$li("Player: Player name"),
+                  tags$li("Yr: Year"),
+                  tags$li("A: Assists"),
+                  tags$li("PTS: Points (goals + assists)"),
+                  tags$li("FOW: Face-offs won"),
+                  tags$li("HIT: Hits"),
+                  tags$li("GP: Games played"),
+                  tags$li("PIM: Penalty minutes"),
+                  tags$li("SH: Short-handed goals"),
+                  tags$li("S: Shots on goal")
+                ),
+                "Motivation for App Creation:",
+                tags$p(
+                  "The app is motivated by the need to address concerns about the misrepresentation of data in the NHL app. ",
+                  "The specific issue that motivated the creation of this app include exploring the distributions ",
+                  "of different hockey position player statistics from 2008 to 2022. This app can help answer questions like, ",
+                  "'Who had the third most goals for the Chicago Blackhawks in 2013?' or, ",
+                  "'Who had the most penalty minutes for the Minnesota Wild in 2009?'"
+                ),
+                "App Functionality:",
+                tags$p(
+                  "The app allows users to visualize and analyze the distributions of various hockey statistics for different players and teams. ",
+                  "Users can explore trends, compare player performances, and answer specific questions related to player production. ",
+                  "The app provides a comprehensible visualization that enables users to interact with the data to choose specific teams and years. "
+                )
+              )
+            )
+          )
+        ),  # Remove the "Data" tab
+        tabPanel(
+          "Reference",
+          tags$p(
+            "The data were obtained from",
+            tags$a("Hockey Reference", href = "https://www.hockey-reference.com/"), "."
+          ),
+          tags$p(
+            "The data represent", nrow(skaterdata),
+            "NHL skater's metrics from 2008 to 2022"
+          )
+        )
+      )
+    )
+  )
+)
+
+server <- function(input, output) {
+  filtered_data <- reactive({
+    filter(skaterdata, Tm == input$team_selector, Yr == input$year_selector, !!sym(input$variable_selector) != 0)
+  })
+  
+  output$bar_chart <- renderPlot({
+    ggplot(filtered_data(), aes(x = reorder(Player, -!!sym(input$variable_selector)), y = !!sym(input$variable_selector))) +
+      geom_col(fill = "navy", color = "black") +
+      geom_text(aes(label = sprintf("%d", !!sym(input$variable_selector))),
+                position = position_stack(vjust = 0.5), color = "white", size = 3) +  
+      labs(title = paste(input$team_selector, input$variable_selector, "by Player in", input$year_selector),
+           x = "Player",
+           y = input$variable_selector) +
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8), 
+            panel.grid.major = element_blank(),  
+            panel.grid.minor = element_blank())  
+  })
+}
+
+shinyApp(ui, server)
+
+```
+
