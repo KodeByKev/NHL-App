@@ -1,3 +1,4 @@
-Run the R code chunk in the RMarkdown file to use my shinyapp for skater NHL statsitics!
+Use app in browser with this link: https://kodebykev.shinyapps.io/NHLApp/
 
-Make sure the .csv is in your RStudio environment.
+"NHLApp.RMD" shows the R code for the shinyapp
+
